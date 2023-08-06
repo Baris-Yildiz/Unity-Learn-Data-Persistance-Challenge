@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.IO;
 
 public class MainManager : MonoBehaviour
 {
@@ -17,11 +18,17 @@ public class MainManager : MonoBehaviour
     private int m_Points;
     
     private bool m_GameOver = false;
+    public static MainManager Instance;
+
+    public PlayerData playerData = new PlayerData();
 
     
     // Start is called before the first frame update
     void Start()
     {
+        Instance = this;
+        playerData.name = MenuUIScript.Instance.playerName;
+
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
         
@@ -55,6 +62,13 @@ public class MainManager : MonoBehaviour
         }
         else if (m_GameOver)
         {
+            playerData.score = m_Points;
+
+            if (isHighScore())
+            {
+                SaveHighScore();
+            }
+
             if (Input.GetKeyDown(KeyCode.Space))
             {
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
@@ -73,4 +87,62 @@ public class MainManager : MonoBehaviour
         m_GameOver = true;
         GameOverText.SetActive(true);
     }
+
+    public class PlayerData
+    {
+        public string name;
+        public int score;
+
+        public override string ToString()
+        {
+            if (this != null)
+            {
+                return name + " " + score;
+            }
+            else return "";
+            
+        }
+    }
+
+    public bool isHighScore()
+    {
+        string path = Application.persistentDataPath + "/savefile.json";
+        if (File.Exists(path))
+        {
+            string content = File.ReadAllText(path);
+            PlayerData jsonData = JsonUtility.FromJson<PlayerData>(content);
+
+            return playerData.score > jsonData.score;
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    public void SaveHighScore()
+    {
+        string path = Application.persistentDataPath + "/savefile.json";
+        string createdJson = JsonUtility.ToJson(playerData);
+        File.WriteAllText(path, createdJson);
+    }
+
+    public static string ReturnHighScoreAndName()
+    {
+        string path = Application.persistentDataPath + "/savefile.json";
+        PlayerData jsonData = null;
+
+        print(File.Exists(path));
+
+
+        if (File.Exists(path))
+        {
+            string content = File.ReadAllText(path);
+            jsonData = JsonUtility.FromJson<PlayerData>(content);
+        }
+
+        return jsonData.ToString();
+    }
+
+
 }
